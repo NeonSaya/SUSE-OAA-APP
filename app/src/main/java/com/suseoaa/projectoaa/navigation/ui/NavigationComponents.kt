@@ -103,7 +103,7 @@ fun CompactLayout(navController: NavHostController, viewModel: ShareViewModel) {
         // 【顶部栏】
         topBar = {
             TopAppBar(
-                title = { Text("手机模式 📱") },
+                title = { Text("手机模式") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor =
                         MaterialTheme.colorScheme.primaryContainer
@@ -524,9 +524,7 @@ fun ExpandedLayout(
                             composable(route = "profile") { ProfileContent(viewModel) }
                         }
                     }
-
                 }
-
             }
         }
     }
