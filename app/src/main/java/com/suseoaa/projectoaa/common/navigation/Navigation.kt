@@ -26,7 +26,6 @@ fun AppNavigation(windowSizeClass: WindowWidthSizeClass, viewModel: ShareViewMod
     // 使用 AppRoutes 定义的路由
     NavHost(navController = navController, startDestination = AppRoutes.Splash.route) {
 
-
         composable(AppRoutes.Splash.route) {
             SplashScreen(navController, loginViewModel)
         }
@@ -37,7 +36,7 @@ fun AppNavigation(windowSizeClass: WindowWidthSizeClass, viewModel: ShareViewMod
                 navController = navController,
                 viewModel = loginViewModel,
                 onLoginSuccess = {
-                    navController.navigate(AppRoutes.StudentEntry.route) {
+                    navController.navigate(AppRoutes.Home.route) {
                         popUpTo(AppRoutes.Login.route) { inclusive = true }
                     }
                 }

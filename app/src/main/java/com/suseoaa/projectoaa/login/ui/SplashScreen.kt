@@ -29,7 +29,7 @@ fun SplashScreen(
         when (viewModel.isTokenValid) {
             true -> {
                 //  Entry
-                navController.navigate(AppRoutes.Home.route) {
+                navController.navigate(AppRoutes.StudentEntry.route) {
                     popUpTo(AppRoutes.Splash.route) { inclusive = true }
                 }
             }
