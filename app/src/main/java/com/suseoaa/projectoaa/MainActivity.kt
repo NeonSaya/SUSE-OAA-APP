@@ -15,8 +15,7 @@ import com.suseoaa.projectoaa.common.theme.ProjectOAATheme
 import com.suseoaa.projectoaa.common.theme.ThemeManager
 import com.suseoaa.projectoaa.common.util.SessionManager
 import com.suseoaa.projectoaa.common.util.WallpaperManager
-import com.suseoaa.projectoaa.navigation.AdaptiveApp
-import com.suseoaa.projectoaa.navigation.viewmodel.ShareViewModel
+import com.suseoaa.projectoaa.startHomeNavigation.viewmodel.ShareViewModel
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)

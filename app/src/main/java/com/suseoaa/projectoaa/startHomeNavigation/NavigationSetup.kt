@@ -1,13 +1,13 @@
-package com.suseoaa.projectoaa.navigation
+package com.suseoaa.projectoaa.startHomeNavigation
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.rememberNavController
-import com.suseoaa.projectoaa.navigation.ui.CompactLayout
-import com.suseoaa.projectoaa.navigation.ui.ExpandedLayout
-import com.suseoaa.projectoaa.navigation.ui.MediumLayout
-import com.suseoaa.projectoaa.navigation.viewmodel.ShareViewModel
+import com.suseoaa.projectoaa.startHomeNavigation.ui.CompactLayout
+import com.suseoaa.projectoaa.startHomeNavigation.ui.ExpandedLayout
+import com.suseoaa.projectoaa.startHomeNavigation.ui.MediumLayout
+import com.suseoaa.projectoaa.startHomeNavigation.viewmodel.ShareViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,7 +1,6 @@
-package com.suseoaa.projectoaa.navigation.ui
+package com.suseoaa.projectoaa.startHomeNavigation.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -16,14 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
-import com.suseoaa.projectoaa.navigation.viewmodel.ShareViewModel
+import com.suseoaa.projectoaa.startHomeNavigation.viewmodel.ShareViewModel
 
 // ========== 页面内容实现 ==========
 
 @Composable
 fun HomeContent(viewModel: ShareViewModel) {
     val isVisible by viewModel.showOfState.collectAsState()
-    val items by viewModel.homeItems.collectAsState()
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -40,21 +38,6 @@ fun HomeContent(viewModel: ShareViewModel) {
             Button(
                 onClick = { viewModel.toggleOfUI() }) {
                 Text(if (viewModel.showOfState.collectAsState().value) "隐藏" else "显示")
-            }
-
-
-            // 使用预加载的 items 快速渲染主页内容（避免首次加载延迟）
-            Row {
-                items.take(7).forEach { text ->
-                    Card(
-                        modifier = Modifier
-                            .height(50.dp)
-                            .weight(1f),
-                        shape = RoundedCornerShape(6.dp),
-                    ) {
-                        Text(text)
-                    }
-                }
             }
         }
 

@@ -12,8 +12,8 @@ import com.suseoaa.projectoaa.login.ui.LoginScreen
 import com.suseoaa.projectoaa.login.ui.RegisterScreen
 import com.suseoaa.projectoaa.login.ui.SplashScreen
 import com.suseoaa.projectoaa.login.viewmodel.MainViewModel
-import com.suseoaa.projectoaa.navigation.AdaptiveApp
-import com.suseoaa.projectoaa.navigation.viewmodel.ShareViewModel
+import com.suseoaa.projectoaa.startHomeNavigation.AdaptiveApp
+import com.suseoaa.projectoaa.startHomeNavigation.viewmodel.ShareViewModel
 import com.suseoaa.projectoaa.student.ui.StudentAppMainEntry
 
 @Composable
@@ -58,7 +58,7 @@ fun AppNavigation(windowSizeClass: WindowWidthSizeClass, viewModel: ShareViewMod
                 onLogout = {
                     SessionManager.clear(context)
                     navController.navigate(AppRoutes.Login.route) {
-                        popUpTo(AppRoutes.StudentEntry.route) { inclusive = true }
+                        popUpTo(AppRoutes.Home.route) { inclusive = true }
                     }
                 }
             )

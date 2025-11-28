@@ -1,10 +1,8 @@
-package com.suseoaa.projectoaa.navigation.viewmodel
+package com.suseoaa.projectoaa.startHomeNavigation.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 class ShareViewModel : ViewModel() {
     private val _showOfState = MutableStateFlow(false)

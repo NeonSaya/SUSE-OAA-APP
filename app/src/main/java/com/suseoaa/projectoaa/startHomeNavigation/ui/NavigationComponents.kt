@@ -1,4 +1,4 @@
-package com.suseoaa.projectoaa.navigation.ui
+package com.suseoaa.projectoaa.startHomeNavigation.ui
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -20,7 +20,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.suseoaa.projectoaa.navigation.viewmodel.ShareViewModel
+import com.suseoaa.projectoaa.startHomeNavigation.viewmodel.ShareViewModel
 
 // 定义页面顺序，用于确定动画方向
 private val screenOrder = mapOf(
