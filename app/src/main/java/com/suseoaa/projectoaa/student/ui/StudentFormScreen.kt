@@ -6,7 +6,18 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,56 +49,83 @@ val DEPARTMENTS = listOf("算法竞赛部", "项目实践部", "组织宣传部"
 @Composable
 fun StudentFormScreen(
     onBack: () -> Unit,
-    viewModel: StudentFormViewModel = viewModel()
+    viewModel: StudentFormViewModel = viewModel(),
+    currentThemeName: String //  1. 添加参数
 ) {
     // 每次进入初始化类型
     LaunchedEffect(Unit) { viewModel.initType("通用") }
     val context = LocalContext.current
 
-    Scaffold(
-        containerColor = Color.Transparent, // 保持背景透明，显示壁纸
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("申请报名表") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.Transparent
+    // 2. 添加颜色覆盖逻辑
+    val isLegacyTheme = currentThemeName.contains("Android 4.0") || currentThemeName.contains("Android 2.3")
+    val originalColorScheme = MaterialTheme.colorScheme
+
+    // 如果是旧版主题，强制覆盖配色；否则使用原始配色
+    val colorScheme = if (isLegacyTheme) {
+        originalColorScheme.copy(
+            primary = Color.White,                  // 主要颜色（按钮、标题）
+            onPrimary = Color.Black,                // 在主要颜色上的文字（例如按钮文字）
+            secondary = Color.White,                // 次要颜色
+            tertiary = Color.White,                 // 第三颜色
+            onSurface = Color.White,                // 默认文字和图标颜色
+            onSurfaceVariant = Color.LightGray,     // 次要文字、未选中的单选框、占位符
+            outline = Color.Gray,                   // 边框
+            surfaceVariant = Color.DarkGray         // 头像占位符背景
+        )
+    } else {
+        originalColorScheme
+    }
+
+    // 3. 将覆盖后的 colorScheme 应用于所有子组件
+    MaterialTheme(colorScheme = colorScheme) {
+        Scaffold(
+            containerColor = Color.Transparent, // 保持背景透明，显示壁纸
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text("申请报名表") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
-        }
-    ) { padding ->
-        // 使用 Box + LocalConfiguration 替代 BoxWithConstraints，避免 Scope 报错
-        Box(modifier = Modifier.padding(padding)) {
+            }
+        ) { padding ->
+            // (这个 Box 及其所有子项现在都处于新的 MaterialTheme 作用域内)
+            Box(modifier = Modifier.padding(padding)) {
 
-            // 1. 获取屏幕配置
-            val configuration = LocalConfiguration.current
-            val screenWidth = configuration.screenWidthDp.dp
+                // 1. 获取屏幕配置
+                val configuration = LocalConfiguration.current
+                val screenWidth = configuration.screenWidthDp.dp
 
-            // 2. 判断是否为横屏且宽度足够 (平板横屏模式)
-            val isWide = screenWidth > 600.dp && configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                // 2. 判断是否为横屏且宽度足够 (平板横屏模式)
+                val isWide = screenWidth > 600.dp && configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-            // 3. 渲染响应式内容
-            ResponsiveFormContent(viewModel, isWide) {
-                viewModel.submitForm(context) {
-                    Toast.makeText(context, "提交成功！", Toast.LENGTH_SHORT).show()
-                    onBack()
+                // 3. 渲染响应式内容
+                ResponsiveFormContent(viewModel, isWide) {
+                    viewModel.submitForm(context) {
+                        Toast.makeText(context, "提交成功！", Toast.LENGTH_SHORT).show()
+                        onBack()
+                    }
                 }
             }
-        }
 
-        // Loading 遮罩
-        if (viewModel.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f)),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+            // Loading 遮罩
+            if (viewModel.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // (加载指示器现在会自动使用 colorScheme.primary，即白色)
+                    CircularProgressIndicator()
+                }
             }
         }
     }
@@ -95,7 +133,7 @@ fun StudentFormScreen(
 
 /**
  * 响应式表单内容
- * 根据 isWide 参数决定是 单列布局 还是 双列布局
+ * (此函数内部无需修改，所有组件会自动继承父级覆盖后的 colorScheme)
  */
 @Composable
 fun ResponsiveFormContent(
@@ -136,13 +174,14 @@ fun ResponsiveFormContent(
                     // 头像区域
                     Box(
                         modifier = Modifier
-                            .size(90.dp)
+                            .
+                            size(90.dp)
                             .clip(CircleShape)
-                            .background(Color.LightGray)
+                            .background(MaterialTheme.colorScheme.surfaceVariant) // 会自动使用覆盖色
                             .clickable { photoLauncher.launch("image/*") }
                             .border(
                                 width = if (errors.photoError != null) 2.dp else 1.dp,
-                                color = if (errors.photoError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                color = if (errors.photoError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, // 会自动使用覆盖色
                                 shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -155,9 +194,15 @@ fun ResponsiveFormContent(
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            Icon(Icons.Default.AccountCircle, null, Modifier.size(48.dp), tint = Color.Gray)
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                null,
+                                Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant // 会自动使用覆盖色
+                            )
                         }
                     }
+
 
                     Spacer(modifier = Modifier.width(20.dp))
 
@@ -166,6 +211,7 @@ fun ResponsiveFormContent(
                         CompactTextField(formData.name, "姓名", error = errors.name) { viewModel.updateName(it) }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            // (Text 和 RadioButton 会自动使用覆盖色)
                             Text("性别:", style = MaterialTheme.typography.bodyMedium)
                             Spacer(modifier = Modifier.width(8.dp))
                             RadioButton(selected = formData.gender == "男", onClick = { viewModel.updateGender("男") })
@@ -209,7 +255,7 @@ fun ResponsiveFormContent(
                 Text(
                     "竞选意向",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primary, // 会自动使用覆盖色
                     fontWeight = FontWeight.Bold
                 )
 
@@ -227,6 +273,7 @@ fun ResponsiveFormContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // (Text 和 Switch 会自动使用覆盖色)
                     Text("是否服从调剂?", style = MaterialTheme.typography.bodyLarge)
                     Switch(checked = formData.isObeyAdjustment, onCheckedChange = { viewModel.updateObeyAdjustment(it) })
                 }
@@ -237,6 +284,7 @@ fun ResponsiveFormContent(
                 Spacer(Modifier.height(12.dp))
 
                 // 提交按钮
+                // (Button 会自动使用 primary(白) 作为背景, onPrimary(黑) 作为文字)
                 Button(
                     onClick = onSubmit,
                     modifier = Modifier.fillMaxWidth().height(56.dp),

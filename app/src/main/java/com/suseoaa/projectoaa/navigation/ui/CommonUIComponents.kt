@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
- * 极简透明材质风格 (Ultra Transparent)
  * 整个应用通用的卡片
  */
 @Composable
@@ -53,6 +52,7 @@ fun SettingsSubScreenScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
+        // 保持透明以显示壁纸
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
@@ -62,8 +62,12 @@ fun SettingsSubScreenScaffold(
                         Icon(Icons.Default.ArrowBack, contentDescription = "返回")
                     }
                 },
+                // 顶部栏半透明
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+
                 )
             )
         }

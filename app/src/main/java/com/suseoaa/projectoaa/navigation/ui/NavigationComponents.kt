@@ -8,7 +8,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,38 +23,42 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.suseoaa.projectoaa.common.navigation.AppRoutes
 import com.suseoaa.projectoaa.common.theme.OaaThemeConfig
 import com.suseoaa.projectoaa.common.util.WallpaperManager
+import com.suseoaa.projectoaa.courseList.ui.screen.CourseListScreen
+import com.suseoaa.projectoaa.courseList.viewmodel.CourseListViewModel
 import com.suseoaa.projectoaa.login.ui.ProfileScreen
+import com.suseoaa.projectoaa.navigation.viewmodel.HomeViewModel // [新增]
 import com.suseoaa.projectoaa.navigation.viewmodel.ShareViewModel
+import com.suseoaa.projectoaa.student.ui.StudentFormScreen
+import com.suseoaa.projectoaa.student.viewmodel.StudentFormViewModel
 
 // ==========================================
 // 1. 动画与工具函数
 // ==========================================
 private val screenOrder = mapOf("home" to 0, "search" to 1, "settings" to 2, "profile" to 3)
-fun getNavigationDirection(from: String, to: String): Boolean {
-    val fromIndex = screenOrder.getOrDefault(from, 0)
-    val toIndex = screenOrder.getOrDefault(to, 0)
-    return toIndex > fromIndex
-}
+fun getNavigationDirection(from: String, to: String): Boolean { val fromIndex = screenOrder.getOrDefault(from, 0); val toIndex = screenOrder.getOrDefault(to, 0); return toIndex > fromIndex }
 fun getEnterTransition(isForward: Boolean): EnterTransition { return slideInHorizontally(initialOffsetX = { if (isForward) it else -it }, animationSpec = tween(300)) + fadeIn(tween(300)) }
 fun getExitTransition(isForward: Boolean): ExitTransition { return slideOutHorizontally(targetOffsetX = { if (isForward) -it / 2 else it / 2 }, animationSpec = tween(300)) + fadeOut(tween(300)) }
 object NavigationTracker { var lastRoute: String = "home"; fun updateRoute(newRoute: String) { lastRoute = newRoute } }
 
 // ==========================================
-// 2. NavHost
+// 2. 抽离出的 NavHost (核心路由)
 // ==========================================
 @Composable
 private fun AppNavHost(
     navController: NavHostController,
-    viewModel: ShareViewModel,
+    viewModel: ShareViewModel, // 这是 ShareViewModel
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // ShareViewModel 的稳定 lambda
     val onRefreshWallpaper = remember { { ctx: Context -> WallpaperManager.refreshWallpaper(ctx) } }
     val onSaveWallpaper = remember { { ctx: Context -> WallpaperManager.saveCurrentToGallery(ctx) } }
     val onThemeSelected = remember(viewModel) { { theme: OaaThemeConfig -> viewModel.updateTheme(theme) } }
@@ -59,26 +69,40 @@ private fun AppNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = "home",
+        startDestination = AppRoutes.Home.route,
         modifier = modifier,
         enterTransition = { getEnterTransition(true) },
         exitTransition = { getExitTransition(true) },
         popEnterTransition = { getEnterTransition(false) },
         popExitTransition = { getExitTransition(false) }
     ) {
-        // [修改] 传递原始值和稳定的 lambda，而不是整个 viewModel
-        composable(route = "home") {
+        // 注入 HomeViewModel
+        composable(route = AppRoutes.Home.route) {
+            // 自动创建 HomeViewModel 实例
+            val homeViewModel: HomeViewModel = viewModel()
+            val homeUiState = homeViewModel.uiState
+
             HomeContent(
+                // HomeViewModel 状态
+                isCheckedIn = homeUiState.isCheckedIn,
+                checkInCount = homeUiState.checkInCount,
+                placeholderImageUrl = homeUiState.placeholderImageUrl,
+                currentDate = homeUiState.currentDate,
+                cspCountdown = homeUiState.cspCountdown,
+                noipCountdown = homeUiState.noipCountdown,
+                onCheckIn = homeViewModel::onCheckIn,
+
+                // ShareViewModel 状态
                 currentThemeName = viewModel.currentTheme.name,
                 onRefreshWallpaper = onRefreshWallpaper,
-                onSaveWallpaper = onSaveWallpaper
+                onSaveWallpaper = onSaveWallpaper,
+                navController = navController
             )
         }
 
-        // SearchContent 暂时不依赖 VM 里的状态，先保留
-        composable(route = "search") { SearchContent(viewModel) }
+        composable(route = AppRoutes.Search.route) { SearchContent(viewModel) }
 
-        composable(route = "settings") {
+        composable(route = AppRoutes.Settings.route) {
             SettingsContent(
                 currentTheme = viewModel.currentTheme,
                 notificationEnabled = viewModel.notificationEnabled,
@@ -88,10 +112,26 @@ private fun AppNavHost(
             )
         }
 
-        composable(route = "profile") {
-            ProfileScreen(onBack = { navController.navigate("home") }, onLogout = onLogout)
+        composable(route = AppRoutes.Profile.route) {
+            ProfileScreen(onBack = { navController.navigate(AppRoutes.Home.route) }, onLogout = onLogout)
         }
 
+        // --- 新增功能页 ---
+        composable(route = AppRoutes.CourseList.route) {
+            CourseListScreen(
+                viewModel = viewModel<CourseListViewModel>(),
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(route = AppRoutes.StudentForm.route) {
+            StudentFormScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = viewModel<StudentFormViewModel>(),
+                currentThemeName = viewModel.currentTheme.name
+            )
+        }
+
+        // --- 设置子页面 ---
         composable(route = "settings_notifications") {
             NotificationsScreen(
                 isAppNotificationEnabled = viewModel.notificationEnabled,
@@ -122,7 +162,7 @@ private fun AppNavHost(
 }
 
 // ==========================================
-// 3. 布局组件
+// 3. 布局组件 (Compact, Medium, Expanded)
 // ==========================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,8 +171,8 @@ fun CompactLayout(
     viewModel: ShareViewModel,
     onLogout: () -> Unit
 ) {
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: "home"
-    val showBottomBar = currentRoute in listOf("home", "search", "settings", "profile")
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: AppRoutes.Home.route
+    val showBottomBar = currentRoute in listOf(AppRoutes.Home.route, AppRoutes.Search.route, AppRoutes.Settings.route, AppRoutes.Profile.route)
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -148,10 +188,10 @@ fun CompactLayout(
                             }
                         }
                     }
-                    NavigationBarItem(icon = { Icon(Icons.Default.Home, null) }, label = { Text("首页") }, selected = currentRoute == "home", onClick = { navigateTo("home") })
-                    NavigationBarItem(icon = { Icon(Icons.Default.Search, null) }, label = { Text("搜索") }, selected = currentRoute == "search", onClick = { navigateTo("search") })
-                    NavigationBarItem(icon = { Icon(Icons.Default.Settings, null) }, label = { Text("设置") }, selected = currentRoute == "settings", onClick = { navigateTo("settings") })
-                    NavigationBarItem(icon = { Icon(Icons.Default.Person, null) }, label = { Text("个人") }, selected = currentRoute == "profile", onClick = { navigateTo("profile") })
+                    NavigationBarItem(icon = { Icon(AppRoutes.Home.icon, null) }, label = { Text(AppRoutes.Home.title) }, selected = currentRoute == AppRoutes.Home.route, onClick = { navigateTo(AppRoutes.Home.route) })
+                    NavigationBarItem(icon = { Icon(AppRoutes.Search.icon, null) }, label = { Text(AppRoutes.Search.title) }, selected = currentRoute == AppRoutes.Search.route, onClick = { navigateTo(AppRoutes.Search.route) })
+                    NavigationBarItem(icon = { Icon(AppRoutes.Settings.icon, null) }, label = { Text(AppRoutes.Settings.title) }, selected = currentRoute == AppRoutes.Settings.route, onClick = { navigateTo(AppRoutes.Settings.route) })
+                    NavigationBarItem(icon = { Icon(AppRoutes.Profile.icon, null) }, label = { Text(AppRoutes.Profile.title) }, selected = currentRoute == AppRoutes.Profile.route, onClick = { navigateTo(AppRoutes.Profile.route) })
                 }
             }
         }
@@ -172,8 +212,8 @@ fun MediumLayout(
     viewModel: ShareViewModel,
     onLogout: () -> Unit
 ) {
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: "home"
-    val showNavRail = currentRoute in listOf("home", "search", "settings", "profile")
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: AppRoutes.Home.route
+    val showNavRail = currentRoute in listOf(AppRoutes.Home.route, AppRoutes.Search.route, AppRoutes.Settings.route, AppRoutes.Profile.route)
 
     Row(modifier = Modifier.fillMaxSize()) {
         if (showNavRail) {
@@ -187,10 +227,10 @@ fun MediumLayout(
                         }
                     }
                 }
-                NavigationRailItem(icon = { Icon(Icons.Default.Home, null) }, label = { Text("首页") }, selected = currentRoute == "home", onClick = { navigateTo("home") })
-                NavigationRailItem(icon = { Icon(Icons.Default.Search, null) }, label = { Text("搜索") }, selected = currentRoute == "search", onClick = { navigateTo("search") })
-                NavigationRailItem(icon = { Icon(Icons.Default.Settings, null) }, label = { Text("设置") }, selected = currentRoute == "settings", onClick = { navigateTo("settings") })
-                NavigationRailItem(icon = { Icon(Icons.Default.Person, null) }, label = { Text("个人") }, selected = currentRoute == "profile", onClick = { navigateTo("profile") })
+                NavigationRailItem(icon = { Icon(AppRoutes.Home.icon, null) }, label = { Text(AppRoutes.Home.title) }, selected = currentRoute == AppRoutes.Home.route, onClick = { navigateTo(AppRoutes.Home.route) })
+                NavigationRailItem(icon = { Icon(AppRoutes.Search.icon, null) }, label = { Text(AppRoutes.Search.title) }, selected = currentRoute == AppRoutes.Search.route, onClick = { navigateTo(AppRoutes.Search.route) })
+                NavigationRailItem(icon = { Icon(AppRoutes.Settings.icon, null) }, label = { Text(AppRoutes.Settings.title) }, selected = currentRoute == AppRoutes.Settings.route, onClick = { navigateTo(AppRoutes.Settings.route) })
+                NavigationRailItem(icon = { Icon(AppRoutes.Profile.icon, null) }, label = { Text(AppRoutes.Profile.title) }, selected = currentRoute == AppRoutes.Profile.route, onClick = { navigateTo(AppRoutes.Profile.route) })
             }
         }
         AppNavHost(
@@ -209,7 +249,7 @@ fun ExpandedLayout(
     viewModel: ShareViewModel,
     onLogout: () -> Unit
 ) {
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: "home"
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: AppRoutes.Home.route
     Row(modifier = Modifier.fillMaxSize()) {
         PermanentNavigationDrawer(
             drawerContent = {
@@ -224,10 +264,10 @@ fun ExpandedLayout(
                             }
                         }
                     }
-                    NavigationDrawerItem(icon = { Icon(Icons.Default.Home, null) }, label = { Text("首页") }, selected = currentRoute == "home", onClick = { navigateTo("home") }, modifier = Modifier.padding(horizontal = 12.dp))
-                    NavigationDrawerItem(icon = { Icon(Icons.Default.Search, null) }, label = { Text("搜索") }, selected = currentRoute == "search", onClick = { navigateTo("search") }, modifier = Modifier.padding(horizontal = 12.dp))
-                    NavigationDrawerItem(icon = { Icon(Icons.Default.Settings, null) }, label = { Text("设置") }, selected = currentRoute == "settings", onClick = { navigateTo("settings") }, modifier = Modifier.padding(horizontal = 12.dp))
-                    NavigationDrawerItem(icon = { Icon(Icons.Default.Person, null) }, label = { Text("个人中心") }, selected = currentRoute == "profile", onClick = { navigateTo("profile") }, modifier = Modifier.padding(horizontal = 12.dp))
+                    NavigationDrawerItem(icon = { Icon(AppRoutes.Home.icon, null) }, label = { Text(AppRoutes.Home.title) }, selected = currentRoute == AppRoutes.Home.route, onClick = { navigateTo(AppRoutes.Home.route) }, modifier = Modifier.padding(horizontal = 12.dp))
+                    NavigationDrawerItem(icon = { Icon(AppRoutes.Search.icon, null) }, label = { Text(AppRoutes.Search.title) }, selected = currentRoute == AppRoutes.Search.route, onClick = { navigateTo(AppRoutes.Search.route) }, modifier = Modifier.padding(horizontal = 12.dp))
+                    NavigationDrawerItem(icon = { Icon(AppRoutes.Settings.icon, null) }, label = { Text(AppRoutes.Settings.title) }, selected = currentRoute == AppRoutes.Settings.route, onClick = { navigateTo(AppRoutes.Settings.route) }, modifier = Modifier.padding(horizontal = 12.dp))
+                    NavigationDrawerItem(icon = { Icon(AppRoutes.Profile.icon, null) }, label = { Text(AppRoutes.Profile.title) }, selected = currentRoute == AppRoutes.Profile.route, onClick = { navigateTo(AppRoutes.Profile.route) }, modifier = Modifier.padding(horizontal = 12.dp))
                 }
             }
         ) {

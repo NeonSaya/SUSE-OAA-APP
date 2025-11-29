@@ -1,6 +1,17 @@
 package com.suseoaa.projectoaa.courseList.ui.screen
 
-import androidx.compose.foundation.layout.*
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -9,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.suseoaa.projectoaa.courseList.viewmodel.CourseListViewModel
@@ -22,18 +34,26 @@ import com.suseoaa.projectoaa.courseList.data.remote.dto.Kb
 @Composable
 fun CourseListScreen(
     viewModel: CourseListViewModel,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val courseData by viewModel.courseData.collectAsStateWithLifecycle()
     val uiState = viewModel.uiState
     var showLoginDialog by remember { mutableStateOf(false) }
-    
+
     Scaffold(
+        // 保持UI风格统一
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { Text("课表查询") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
                 )
             )
         },
@@ -57,21 +77,22 @@ fun CourseListScreen(
                 errorMessage = uiState.errorMessage,
                 onDismiss = { viewModel.clearMessages() }
             )
-            
+
             // 加载状态
             if (uiState.isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
-            
+
             // 课表数据显示
             courseData?.let { data ->
                 CourseListContent(courses = data.kbList ?: emptyList())
             } ?: run {
-                EmptyCourseState(onFetchClick = { showLoginDialog = true })
+                // 移除空状态下的按钮，统一使用右下角 FAB
+                EmptyCourseState()
             }
         }
     }
-    
+
     // 登录对话框
     if (showLoginDialog) {
         LoginDialog(
@@ -193,7 +214,7 @@ private fun CourseListContent(courses: List<Kb?>) {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(courses.filterNotNull()) { course ->
+        items(courses.filterNotNull(),key = { course -> course.kch ?: course.kcmc ?: "" }) { course ->
             CourseCard(course = course)
         }
     }
@@ -282,7 +303,7 @@ private fun CourseDetailRow(
 }
 
 @Composable
-private fun EmptyCourseState(onFetchClick: () -> Unit) {
+private fun EmptyCourseState() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -304,16 +325,10 @@ private fun EmptyCourseState(onFetchClick: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "点击下方按钮获取课表",
+            text = "点击右下角按钮获取课表",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onFetchClick) {
-            Icon(Icons.Default.Refresh, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("获取课表")
-        }
     }
 }
 

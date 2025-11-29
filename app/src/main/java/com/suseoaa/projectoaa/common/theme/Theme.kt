@@ -68,6 +68,17 @@ fun ProjectOAATheme(
                 )
             } else {
                 // 3. 非二次元主题，或者没图时：显示默认渐变
+                val isLegacyAndroidTheme = themeConfig.name.contains("Android 4.0") ||
+                        themeConfig.name.contains("Android 2.3")
+
+                if (isLegacyAndroidTheme) {
+                    // 3a. Legacy 主题：使用主题定义的纯色背景 (应为黑色)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(colorScheme.background) // 使用纯色
+                    )
+                } else {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -79,7 +90,8 @@ fun ProjectOAATheme(
                                 )
                             )
                         )
-                )
+                     )
+                }
             }
 
             content()

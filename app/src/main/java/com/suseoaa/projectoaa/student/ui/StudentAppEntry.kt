@@ -2,7 +2,18 @@ package com.suseoaa.projectoaa.student.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -26,18 +37,18 @@ enum class AppScreen { Start, Form, Profile }
 @Composable
 fun StudentAppMainEntry(onLogout: () -> Unit = {}) {
     var currentScreen by remember { mutableStateOf(AppScreen.Start) }
-
+    val currentThemeName = ThemeManager.currentTheme.name
     when (currentScreen) {
         AppScreen.Start -> {
             StartSelectionScreen(
                 onStartClick = { currentScreen = AppScreen.Form },
-                onProfileClick = { currentScreen = AppScreen.Profile }
+                onProfileClick = { currentScreen = AppScreen.Profile } ,
             )
         }
 
         AppScreen.Form -> {
             BackHandler { currentScreen = AppScreen.Start }
-            StudentFormScreen(onBack = { currentScreen = AppScreen.Start })
+            StudentFormScreen(onBack = { currentScreen = AppScreen.Start },currentThemeName = currentThemeName)
         }
 
         AppScreen.Profile -> {
@@ -52,7 +63,10 @@ fun StudentAppMainEntry(onLogout: () -> Unit = {}) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StartSelectionScreen(onStartClick: () -> Unit, onProfileClick: () -> Unit) {
+fun StartSelectionScreen(
+    onStartClick: () -> Unit,
+    onProfileClick: () -> Unit,
+) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showThemeDialog by remember { mutableStateOf(false) }
