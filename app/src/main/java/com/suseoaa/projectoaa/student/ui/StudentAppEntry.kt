@@ -23,12 +23,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+// [修复] 移除了 LocalContext 导入
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.suseoaa.projectoaa.common.theme.ThemeManager
-import com.suseoaa.projectoaa.common.util.SessionManager
-import com.suseoaa.projectoaa.common.util.WallpaperManager
+// [修复] 导入 Hilt 和 ViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.suseoaa.projectoaa.navigation.viewmodel.ShareViewModel
+import com.suseoaa.projectoaa.student.viewmodel.StudentFormViewModel
+// [解耦] 移除了 ThemeManager 导入
+// [修复] 移除了静态 SessionManager 和 WallpaperManager 导入
 import com.suseoaa.projectoaa.login.ui.ProfileScreen
 import kotlinx.coroutines.launch
 
@@ -37,10 +40,17 @@ enum class AppScreen { Start, Form, Profile }
 @Composable
 fun StudentAppMainEntry(onLogout: () -> Unit = {}) {
     var currentScreen by remember { mutableStateOf(AppScreen.Start) }
-    val currentThemeName = ThemeManager.currentTheme.name
+
+    // [修复] 1. 获取 ShareViewModel
+    val shareViewModel: ShareViewModel = hiltViewModel()
+    // [修复] 2. 从 ViewModel 读取主题
+    val currentThemeName = shareViewModel.currentTheme.name
+
     when (currentScreen) {
         AppScreen.Start -> {
             StartSelectionScreen(
+                // [修复] 3. 传递 ViewModel
+                shareViewModel = shareViewModel,
                 onStartClick = { currentScreen = AppScreen.Form },
                 onProfileClick = { currentScreen = AppScreen.Profile } ,
             )
@@ -48,7 +58,12 @@ fun StudentAppMainEntry(onLogout: () -> Unit = {}) {
 
         AppScreen.Form -> {
             BackHandler { currentScreen = AppScreen.Start }
-            StudentFormScreen(onBack = { currentScreen = AppScreen.Start },currentThemeName = currentThemeName)
+            StudentFormScreen(
+                // [修复] 4. StudentFormScreen 使用 Hilt 获取自己的 ViewModel
+                viewModel = hiltViewModel<StudentFormViewModel>(),
+                onBack = { currentScreen = AppScreen.Start },
+                currentThemeName = currentThemeName
+            )
         }
 
         AppScreen.Profile -> {
@@ -64,13 +79,15 @@ fun StudentAppMainEntry(onLogout: () -> Unit = {}) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StartSelectionScreen(
+    // [修复] 5. 接收 ShareViewModel
+    shareViewModel: ShareViewModel,
     onStartClick: () -> Unit,
     onProfileClick: () -> Unit,
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showThemeDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+    // [修复] 6. 移除了 context
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -97,14 +114,15 @@ fun StartSelectionScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(12.dp))
+                        // [修复] 7. 从 ViewModel 读取用户信息
                         Text(
-                            text = SessionManager.currentUser ?: "User",
+                            text = shareViewModel.currentUser ?: "User",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = SessionManager.currentRole ?: "Role",
+                            text = shareViewModel.currentRole ?: "Role",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
@@ -118,12 +136,14 @@ fun StartSelectionScreen(
                     onClick = { scope.launch { drawerState.close(); onProfileClick() } },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
-                if (ThemeManager.currentTheme.name.contains("二次元")) {
+                // [修复] 8. 从 ViewModel 读取主题
+                if (shareViewModel.currentTheme.name.contains("二次元")) {
                     NavigationDrawerItem(
                         label = { Text("获取当前壁纸") },
                         icon = { Icon(Icons.Default.Image, null) },
                         selected = false,
-                        onClick = { WallpaperManager.saveCurrentToGallery(context); scope.launch { drawerState.close() } },
+                        // [修复] 9. 调用 ViewModel 的方法
+                        onClick = { shareViewModel.onSaveWallpaper(); scope.launch { drawerState.close() } },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                 }
@@ -184,15 +204,16 @@ fun StartSelectionScreen(
                             modifier = Modifier.weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            // [修复] 10. 从 ViewModel 读取用户信息
                             Text(
-                                "欢迎回来，${SessionManager.currentUser}",
+                                "欢迎回来，${shareViewModel.currentUser}",
                                 style = MaterialTheme.typography.displayMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                "身份：${SessionManager.currentRole}",
+                                "身份：${shareViewModel.currentRole}",
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.outline
                             )
@@ -210,15 +231,16 @@ fun StartSelectionScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
+                        // [修复] 11. 从 ViewModel 读取用户信息
                         Text(
-                            "欢迎回来，${SessionManager.currentUser}",
+                            "欢迎回来，${shareViewModel.currentUser}",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "身份：${SessionManager.currentRole}",
+                            "身份：${shareViewModel.currentRole}",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -229,5 +251,15 @@ fun StartSelectionScreen(
             }
         }
     }
-    if (showThemeDialog) ThemeSelectionDialog { showThemeDialog = false }
+
+    // [修复] 解决了错误并完成了与 ViewModel 的解耦
+    if (showThemeDialog) {
+        ThemeSelectionDialog(
+            onDismiss = { showThemeDialog = false },
+            onThemeSelected = { theme ->
+                shareViewModel.updateTheme(theme)
+                showThemeDialog = false
+            }
+        )
+    }
 }

@@ -2,12 +2,10 @@ package com.suseoaa.projectoaa.common.navigation
 
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.suseoaa.projectoaa.common.util.SessionManager
 import com.suseoaa.projectoaa.login.ui.LoginScreen
 import com.suseoaa.projectoaa.login.ui.ProfileScreen
 import com.suseoaa.projectoaa.login.ui.RegisterScreen
@@ -18,11 +16,13 @@ import com.suseoaa.projectoaa.navigation.viewmodel.ShareViewModel
 import com.suseoaa.projectoaa.student.ui.StudentAppMainEntry
 
 @Composable
-fun AppNavigation(windowSizeClass: WindowWidthSizeClass, viewModel: ShareViewModel) {
+fun AppNavigation(
+    windowSizeClass: WindowWidthSizeClass,
+    shareViewModel: ShareViewModel
+) {
 
     val navController = rememberNavController()
-    val loginViewModel: MainViewModel = viewModel()
-    val context = LocalContext.current
+    val loginViewModel: MainViewModel = hiltViewModel()
 
     NavHost(navController = navController, startDestination = AppRoutes.Splash.route) {
 
@@ -49,10 +49,9 @@ fun AppNavigation(windowSizeClass: WindowWidthSizeClass, viewModel: ShareViewMod
         composable(AppRoutes.Home.route) {
             AdaptiveApp(
                 windowSizeClass = windowSizeClass,
-                viewModel = viewModel,
+                shareViewModel = shareViewModel,
                 onLogout = {
-                    SessionManager.clear(context)
-                    loginViewModel.clearState()
+                    loginViewModel.logout()
                     navController.navigate(AppRoutes.Login.route) {
                         popUpTo(0) { inclusive = true }
                         launchSingleTop = true
@@ -64,8 +63,7 @@ fun AppNavigation(windowSizeClass: WindowWidthSizeClass, viewModel: ShareViewMod
         composable(AppRoutes.StudentEntry.route) {
             StudentAppMainEntry(
                 onLogout = {
-                    SessionManager.clear(context)
-                    loginViewModel.clearState()
+                    loginViewModel.logout()
                     navController.navigate(AppRoutes.Login.route) {
                         popUpTo(0) { inclusive = true }
                         launchSingleTop = true
@@ -78,8 +76,7 @@ fun AppNavigation(windowSizeClass: WindowWidthSizeClass, viewModel: ShareViewMod
             ProfileScreen(
                 onBack = { navController.popBackStack() },
                 onLogout = {
-                    SessionManager.clear(context)
-                    loginViewModel.clearState()
+                    loginViewModel.logout()
                     navController.navigate(AppRoutes.Login.route) {
                         popUpTo(0) { inclusive = true }
                         launchSingleTop = true

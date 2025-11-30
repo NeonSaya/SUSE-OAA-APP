@@ -1,26 +1,16 @@
 package com.suseoaa.projectoaa.common.theme
 
 import android.app.Activity
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import coil.compose.rememberAsyncImagePainter
-import com.suseoaa.projectoaa.common.util.WallpaperManager
-import java.io.File
 
 @Composable
 fun ProjectOAATheme(
-    themeConfig: OaaThemeConfig = AnimeLightTheme,
+    themeConfig: OaaThemeConfig,
     content: @Composable () -> Unit
 ) {
     val colorScheme = themeConfig.colorScheme
@@ -30,71 +20,18 @@ fun ProjectOAATheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            val insetsController = WindowCompat.getInsetsController(window, view)
             window.statusBarColor = colorScheme.background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !themeConfig.isDark
+            insetsController.isAppearanceLightStatusBars = !themeConfig.isDark
+            window.navigationBarColor = colorScheme.background.toArgb()
+            insetsController.isAppearanceLightNavigationBars = !themeConfig.isDark
         }
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = shapes
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-
-            val apiWallpaper = WallpaperManager.currentWallpaperUri.value
-            val file = if (apiWallpaper?.path != null) File(apiWallpaper.path!!) else null
-
-            val isFileValid = apiWallpaper != null && file != null && file.exists() && file.length() > 0
-
-            val showWallpaper = themeConfig.name.contains("二次元") && isFileValid
-
-            if (showWallpaper) {
-                // 1. 显示壁纸
-                Image(
-                    painter = rememberAsyncImagePainter(apiWallpaper),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-                // 2. 叠加半透明蒙层
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            colorScheme.surface.copy(alpha = 0.9f)
-                        )
-                )
-            } else {
-                // 3. 非二次元主题，或者没图时：显示默认渐变
-                val isLegacyAndroidTheme = themeConfig.name.contains("Android 4.0") ||
-                        themeConfig.name.contains("Android 2.3")
-
-                if (isLegacyAndroidTheme) {
-                    // 3a. Legacy 主题：使用主题定义的纯色背景 (应为黑色)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(colorScheme.background) // 使用纯色
-                    )
-                } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    colorScheme.primaryContainer.copy(alpha = 0.3f),
-                                    colorScheme.background
-                                )
-                            )
-                        )
-                     )
-                }
-            }
-
-            content()
-        }
-    }
+        shapes = shapes,
+        content = content
+    )
 }

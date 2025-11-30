@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,13 +43,14 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.suseoaa.projectoaa.login.model.UserInfoData
 import com.suseoaa.projectoaa.login.viewmodel.ProfileViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     LaunchedEffect(Unit) {
         viewModel.fetchUserInfo()
@@ -105,7 +105,6 @@ private fun ProfileContent(
     paddingValues: PaddingValues,
     onLogout: () -> Unit
 ) {
-    val context = LocalContext.current
     val screenConfig = LocalConfiguration.current
     val isWideScreen = screenConfig.screenWidthDp >= 600
 
@@ -120,7 +119,7 @@ private fun ProfileContent(
             viewModel = viewModel,
             onConfirm = {
                 // 调用修改密码逻辑
-                viewModel.updatePassword(context, onSuccess = onLogout)
+                viewModel.updatePassword(onSuccess = onLogout)
             },
             onDismiss = {
                 viewModel.showPasswordDialog = false
@@ -215,7 +214,6 @@ private fun ProfileContent(
 
                             // 退出登录：调用 ViewModel 清除数据并跳转
                             RealLogoutButton(onClick = {
-                                viewModel.logout(context)
                                 onLogout()
                             })
                         }

@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -34,8 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
+import com.suseoaa.projectoaa.student.viewmodel.StudentFormEvent // [解耦] 1. 导入事件
 import com.suseoaa.projectoaa.student.viewmodel.StudentFormViewModel
 import java.util.Calendar
 
@@ -49,37 +49,56 @@ val DEPARTMENTS = listOf("算法竞赛部", "项目实践部", "组织宣传部"
 @Composable
 fun StudentFormScreen(
     onBack: () -> Unit,
-    viewModel: StudentFormViewModel = viewModel(),
-    currentThemeName: String //  1. 添加参数
+    viewModel: StudentFormViewModel = hiltViewModel(),
+    currentThemeName: String
 ) {
-    // 每次进入初始化类型
     LaunchedEffect(Unit) { viewModel.initType("通用") }
     val context = LocalContext.current
 
-    // 2. 添加颜色覆盖逻辑
+    // [解耦] 2. 监听来自 ViewModel 的一次性事件
+    LaunchedEffect(key1 = viewModel) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is StudentFormEvent.SubmissionSuccess -> {
+                    Toast.makeText(context, "提交成功！", Toast.LENGTH_SHORT).show()
+                    onBack() // 视图决定在成功时导航回去
+                }
+                is StudentFormEvent.SubmissionError -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                }
+                is StudentFormEvent.ImageError -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                }
+                is StudentFormEvent.AuthError -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    // (未来可以在这里处理“跳转到登录页”的逻辑)
+                }
+            }
+        }
+    }
+
+    // 2. 添加颜色覆盖逻辑 (不变)
     val isLegacyTheme = currentThemeName.contains("Android 4.0") || currentThemeName.contains("Android 2.3")
     val originalColorScheme = MaterialTheme.colorScheme
-
-    // 如果是旧版主题，强制覆盖配色；否则使用原始配色
     val colorScheme = if (isLegacyTheme) {
         originalColorScheme.copy(
-            primary = Color.White,                  // 主要颜色（按钮、标题）
-            onPrimary = Color.Black,                // 在主要颜色上的文字（例如按钮文字）
-            secondary = Color.White,                // 次要颜色
-            tertiary = Color.White,                 // 第三颜色
-            onSurface = Color.White,                // 默认文字和图标颜色
-            onSurfaceVariant = Color.LightGray,     // 次要文字、未选中的单选框、占位符
-            outline = Color.Gray,                   // 边框
-            surfaceVariant = Color.DarkGray         // 头像占位符背景
+            primary = Color.White,
+            onPrimary = Color.Black,
+            secondary = Color.White,
+            tertiary = Color.White,
+            onSurface = Color.White,
+            onSurfaceVariant = Color.LightGray,
+            outline = Color.Gray,
+            surfaceVariant = Color.DarkGray
         )
     } else {
         originalColorScheme
     }
 
-    // 3. 将覆盖后的 colorScheme 应用于所有子组件
+    // 3. 将覆盖后的 colorScheme 应用于所有子组件 (不变)
     MaterialTheme(colorScheme = colorScheme) {
         Scaffold(
-            containerColor = Color.Transparent, // 保持背景透明，显示壁纸
+            containerColor = Color.Transparent,
             topBar = {
                 CenterAlignedTopAppBar(
                     title = { Text("申请报名表") },
@@ -96,26 +115,24 @@ fun StudentFormScreen(
                 )
             }
         ) { padding ->
-            // (这个 Box 及其所有子项现在都处于新的 MaterialTheme 作用域内)
             Box(modifier = Modifier.padding(padding)) {
 
-                // 1. 获取屏幕配置
                 val configuration = LocalConfiguration.current
                 val screenWidth = configuration.screenWidthDp.dp
-
-                // 2. 判断是否为横屏且宽度足够 (平板横屏模式)
                 val isWide = screenWidth > 600.dp && configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-                // 3. 渲染响应式内容
-                ResponsiveFormContent(viewModel, isWide) {
-                    viewModel.submitForm(context) {
-                        Toast.makeText(context, "提交成功！", Toast.LENGTH_SHORT).show()
-                        onBack()
+                ResponsiveFormContent(
+                    viewModel = viewModel,
+                    isWide = isWide,
+                    // [解耦] 3. onSubmit 回调现在只负责触发 ViewModel 的方法
+                    // 所有后续逻辑 (Toast/导航) 都在 LaunchedEffect 中处理
+                    onSubmit = {
+                        viewModel.submitForm()
                     }
-                }
+                )
             }
 
-            // Loading 遮罩
+            // Loading 遮罩 (不变)
             if (viewModel.isLoading) {
                 Box(
                     modifier = Modifier
@@ -123,7 +140,6 @@ fun StudentFormScreen(
                         .background(Color.Black.copy(alpha = 0.3f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    // (加载指示器现在会自动使用 colorScheme.primary，即白色)
                     CircularProgressIndicator()
                 }
             }
@@ -139,11 +155,11 @@ fun StudentFormScreen(
 fun ResponsiveFormContent(
     viewModel: StudentFormViewModel,
     isWide: Boolean,
-    onSubmit: () -> Unit
+    onSubmit: () -> Unit // 这个 onSubmit 现在只调用 viewModel.submitForm()
 ) {
     val formData = viewModel.formData
     val errors = viewModel.formErrors
-    val scrollState = rememberScrollState() // 竖屏时的滚动状态
+    val scrollState = rememberScrollState()
 
     // 图片选择器
     val photoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -177,11 +193,11 @@ fun ResponsiveFormContent(
                             .
                             size(90.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant) // 会自动使用覆盖色
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                             .clickable { photoLauncher.launch("image/*") }
                             .border(
                                 width = if (errors.photoError != null) 2.dp else 1.dp,
-                                color = if (errors.photoError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, // 会自动使用覆盖色
+                                color = if (errors.photoError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                                 shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -198,7 +214,7 @@ fun ResponsiveFormContent(
                                 Icons.Default.AccountCircle,
                                 null,
                                 Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant // 会自动使用覆盖色
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -211,7 +227,6 @@ fun ResponsiveFormContent(
                         CompactTextField(formData.name, "姓名", error = errors.name) { viewModel.updateName(it) }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            // (Text 和 RadioButton 会自动使用覆盖色)
                             Text("性别:", style = MaterialTheme.typography.bodyMedium)
                             Spacer(modifier = Modifier.width(8.dp))
                             RadioButton(selected = formData.gender == "男", onClick = { viewModel.updateGender("男") })
@@ -226,7 +241,7 @@ fun ResponsiveFormContent(
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 // 学院班级
-                CompactTextField(formData.college, "所在学院", error = errors.college) { viewModel.updateCollege(it) }
+                CompactTextField(formData. college, "所在学院", error = errors.college) { viewModel.updateCollege(it) }
                 CompactTextField(formData.majorClass, "专业班级", error = errors.majorClass) { viewModel.updateMajorClass(it) }
 
                 // 日期与面貌 (一行两个)
@@ -255,7 +270,7 @@ fun ResponsiveFormContent(
                 Text(
                     "竞选意向",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary, // 会自动使用覆盖色
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -273,7 +288,6 @@ fun ResponsiveFormContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // (Text 和 Switch 会自动使用覆盖色)
                     Text("是否服从调剂?", style = MaterialTheme.typography.bodyLarge)
                     Switch(checked = formData.isObeyAdjustment, onCheckedChange = { viewModel.updateObeyAdjustment(it) })
                 }
@@ -284,9 +298,8 @@ fun ResponsiveFormContent(
                 Spacer(Modifier.height(12.dp))
 
                 // 提交按钮
-                // (Button 会自动使用 primary(白) 作为背景, onPrimary(黑) 作为文字)
                 Button(
-                    onClick = onSubmit,
+                    onClick = onSubmit, // [解耦] 此 onClick 现在只调用 viewModel.submitForm()
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     enabled = !viewModel.isLoading
@@ -297,7 +310,7 @@ fun ResponsiveFormContent(
         }
     }
 
-    // --- 布局逻辑 ---
+    // --- 布局逻辑 (不变) ---
     if (isWide) {
         // 平板横屏：左右双栏
         Row(
