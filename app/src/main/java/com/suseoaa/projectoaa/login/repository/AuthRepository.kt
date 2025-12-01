@@ -1,6 +1,5 @@
 package com.suseoaa.projectoaa.login.repository
 
-// [修复] 导入 Inject 和 Singleton
 import javax.inject.Inject
 import javax.inject.Singleton
 // [修复] 移除了 NetworkModule
@@ -11,12 +10,11 @@ import com.suseoaa.projectoaa.login.model.RegisterRequest
 import com.suseoaa.projectoaa.login.model.UserInfoData
 import retrofit2.Response
 
-// [修复] 1. 添加注解并通过构造函数注入
+//添加注解并通过构造函数注入
 @Singleton
 class AuthRepository @Inject constructor(
     private val api: ApiService // Hilt 将从 NetworkModule 提供这个
 ) {
-    // [修复] 2. 移除了 'private val api = NetworkModule.createService(...)'
 
     suspend fun login(username: String, pass: String): Result<String> {
         val response = api.login(LoginRequest(username, pass))

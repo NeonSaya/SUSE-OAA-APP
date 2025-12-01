@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.suseoaa.projectoaa"
-        minSdk = 31
+        minSdk = 21
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -48,6 +48,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     java {
         toolchain {
@@ -80,6 +81,8 @@ dependencies {
     implementation(libs.androidx.compose.material3.windowSizeClass)
     implementation(libs.androidx.compose.compiler)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    // 兼容
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     // 测试
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -91,9 +94,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     // Room
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
+    val roomVersion = "2.5.2"
+    // Room 2.6.0 需要至少安卓 6。先降一下，不行在升回去
+
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
 
     // Retrofit + OkHttp
     implementation(libs.retrofit)
@@ -102,7 +108,6 @@ dependencies {
     implementation(libs.logging.interceptor)
     implementation(libs.moshi.kotlin)
     ksp(libs.moshi.kotlin.codegen)
-    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
 
     // Navigation
     implementation(libs.androidx.navigation.compose)

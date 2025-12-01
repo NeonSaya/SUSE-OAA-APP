@@ -4,14 +4,13 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-// 启动动画相关的 Imports
+import com.suseoaa.projectoaa.common.ui.HandleSaveWallpaperPermission
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-// 响应式布局 (WindowSizeClass) Imports
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
@@ -76,7 +75,7 @@ class MainActivity : ComponentActivity() {
                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                         }
                     }
-
+                    HandleSaveWallpaperPermission()
                     // 5. [启动动画] 状态：控制 App 内容是否可见。
                     var isVisible by remember { mutableStateOf(false) }
 

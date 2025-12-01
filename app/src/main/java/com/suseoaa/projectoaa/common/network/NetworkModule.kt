@@ -12,9 +12,9 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.suseoaa.projectoaa.BuildConfig
-// 导入两个 ApiService
 import com.suseoaa.projectoaa.login.api.ApiService as LoginApiService
 import com.suseoaa.projectoaa.student.network.ApiService as StudentApiService
+import com.suseoaa.projectoaa.common.network.TlsCompatUtil
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -26,7 +26,7 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideMoshi(): Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
+        .add(KotlinJsonAdapterFactory()) // 确保 Moshi 可以处理 Kotlin 类
         .build()
 
     @Singleton
@@ -54,24 +54,30 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideOkHttpClient(authInterceptor: Interceptor): OkHttpClient {
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
+
+        // --- 应用 TLS 1.2 兼容性补丁 ---
+        TlsCompatUtil.applyTls12Compat(builder)
+
+        return builder.build()
+    }
+
+    @Singleton
+    @Provides
+    fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
+        // [修复] 此函数必须存在并使用 Moshi
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi)) // 正确使用 Moshi
             .build()
     }
 
-//    @Singleton
-//    @Provides
-//    fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
-//        return Retrofit.Builder()
-//            .baseUrl(BASE_URL)
-//            .client(okHttpClient)
-//            .addConverterFactory(MoshiConverterFactory.create(moshi))
-//            .build()
-//    }
-//提供用于登录/个人资料的 ApiService
+    //提供用于登录/个人资料的 ApiService
     @Singleton
     @Provides
     fun provideLoginApiService(retrofit: Retrofit): LoginApiService {
